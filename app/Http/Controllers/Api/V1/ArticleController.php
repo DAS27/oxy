@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Modules\Blog\Entities\Article;
+use Illuminate\Support\Str;
 use League\Fractal\Manager;
-use League\Fractal\Resource\Collection;
+use Modules\Blog\Entities\Article;
+use League\Fractal;
 
 class ArticleController extends Controller
 {
@@ -18,13 +19,15 @@ class ArticleController extends Controller
     public function index()
     {
         $fractal = new Manager();
+
         $articles = Article::getArticles();
-        $resource = new Collection($articles, function ($article) {
+
+        $resource = new Fractal\Resource\Collection($articles, function ($article) {
             return [
                 'id'      => (int) $article->id,
                 'user_id' => (int) $article->user_id,
                 'title'   => $article->title,
-                'content' => $article->content,
+                'content' => Str::of($article->content)->limit('200'),
             ];
         });
 
@@ -46,11 +49,25 @@ class ArticleController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     *
+     * @return string
      */
     public function show($id)
     {
-        //
+        $fractal = new Manager();
+
+        $article = Article::findOrFail($id);
+
+        $resource = new Fractal\Resource\Item($article, function (Article $article) {
+            return [
+                'id'      => (int) $article->id,
+                'user_id' => (int) $article->user_id,
+                'title'   => $article->title,
+                'content' => Str::of($article->content)->limit('200'),
+            ];
+        });
+
+        return $fractal->createData($resource)->toJson();
     }
 
     /**
