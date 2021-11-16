@@ -18,6 +18,6 @@ class Article extends Model
 
     public static function getArticles()
     {
-        return DB::table('articles')->orderBy('created_at')->paginate(25);
+        return Article::latest()->orderBy('created_at', 'desc')->paginate(25);
     }
 }
