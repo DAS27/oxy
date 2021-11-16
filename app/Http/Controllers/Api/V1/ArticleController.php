@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ArticleRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -24,10 +25,10 @@ class ArticleController extends Controller
         $articles = Article::getArticles();
 
         $resource = new Fractal\Resource\Collection($articles, function ($article) {
-            $author = User::find($article->user_id);
+            $author = User::findOrFail($article->user_id);
             return [
                 'id'      => (int) $article->id,
-                'title'   => $article->title,
+                'title'   => (string) $article->title,
                 'content' => Str::of($article->content)->limit('200'),
                 'author'  => [
                     'name'  => $author->name,
@@ -43,11 +44,30 @@ class ArticleController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     *
+     * @return string
      */
-    public function store(Request $request)
+    public function store(ArticleRequest $request)
     {
-        //
+        $fractal = new Manager();
+
+        $validatedData = Article::create($request->validated());
+
+        $resource = new Fractal\Resource\Item($validatedData, function (Article $data) {
+            $author = User::findOrFail($data->user_id);
+            return [
+                'title'   => (string) $data->title,
+                'content' => $data->content,
+                'author'  => [
+                    'name'  => $author->name,
+                    'email' => $author->email,
+                ],
+            ];
+        });
+
+        $result = $fractal->createData($resource);
+
+        return response()->json($result, 201);
     }
 
     /**
@@ -64,7 +84,7 @@ class ArticleController extends Controller
         $article = Article::findOrFail($id);
 
         $resource = new Fractal\Resource\Item($article, function (Article $article) {
-            $author = User::find($article->user_id);
+            $author = User::findOrFail($article->user_id);
             return [
                 'id'      => (int) $article->id,
                 'title'   => $article->title,
