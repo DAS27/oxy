@@ -3,7 +3,7 @@
 namespace Modules\Blog\Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Database\Eloquent\Model;
+use Modules\Blog\Entities\Article;
 
 class BlogDatabaseSeeder extends Seeder
 {
@@ -14,8 +14,6 @@ class BlogDatabaseSeeder extends Seeder
      */
     public function run()
     {
-        Model::unguard();
-
-        // $this->call("OthersTableSeeder");
+        Article::factory(100)->create();
     }
 }
