@@ -5,19 +5,30 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\Blog\Entities\Article;
+use League\Fractal\Manager;
+use League\Fractal\Resource\Collection;
 
 class ArticleController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return string
      */
     public function index()
     {
+        $fractal = new Manager();
         $articles = Article::getArticles();
+        $resource = new Collection($articles, function ($article) {
+            return [
+                'id'      => (int) $article->id,
+                'user_id' => (int) $article->user_id,
+                'title'   => $article->title,
+                'content' => $article->content,
+            ];
+        });
 
-        return $articles;
+        return $fractal->createData($resource)->toJson();
     }
 
     /**
