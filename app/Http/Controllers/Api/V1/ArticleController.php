@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use League\Fractal\Manager;
@@ -23,11 +24,15 @@ class ArticleController extends Controller
         $articles = Article::getArticles();
 
         $resource = new Fractal\Resource\Collection($articles, function ($article) {
+            $author = User::find($article->user_id);
             return [
                 'id'      => (int) $article->id,
-                'user_id' => (int) $article->user_id,
                 'title'   => $article->title,
                 'content' => Str::of($article->content)->limit('200'),
+                'author'  => [
+                    'name'  => $author->name,
+                    'email' => $author->email,
+                ],
             ];
         });
 
@@ -59,11 +64,15 @@ class ArticleController extends Controller
         $article = Article::findOrFail($id);
 
         $resource = new Fractal\Resource\Item($article, function (Article $article) {
+            $author = User::find($article->user_id);
             return [
                 'id'      => (int) $article->id,
-                'user_id' => (int) $article->user_id,
                 'title'   => $article->title,
                 'content' => Str::of($article->content)->limit('200'),
+                'author'  => [
+                    'name'  => $author->name,
+                    'email' => $author->email,
+                ],
             ];
         });
 
