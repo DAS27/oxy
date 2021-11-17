@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ArticleRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use League\Fractal\Manager;
 use Modules\Blog\Entities\Article;
 use League\Fractal;
+use Symfony\Component\HttpFoundation\Response;
 
 class ArticleController extends Controller
 {
@@ -67,7 +67,7 @@ class ArticleController extends Controller
 
         $result = $fractal->createData($resource);
 
-        return response()->json($result, 201);
+        return response()->json($result, Response::HTTP_CREATED);
     }
 
     /**
@@ -83,12 +83,12 @@ class ArticleController extends Controller
 
         $article = Article::findOrFail($id);
 
-        $resource = new Fractal\Resource\Item($article, function (Article $article) {
-            $author = User::findOrFail($article->user_id);
+        $resource = new Fractal\Resource\Item($article, function (Article $data) {
+            $author = User::findOrFail($data->user_id);
             return [
-                'id'      => (int) $article->id,
-                'title'   => $article->title,
-                'content' => Str::of($article->content)->limit('200'),
+                'id'      => (int) $data->id,
+                'title'   => $data->title,
+                'content' => Str::of($data->content)->limit('200'),
                 'author'  => [
                     'name'  => $author->name,
                     'email' => $author->email,
@@ -104,11 +104,31 @@ class ArticleController extends Controller
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function update(Request $request, $id)
+    public function update(ArticleRequest $request, $id)
     {
-        //
+        $fractal = new Manager();
+
+        $article = Article::findOrFail($id);
+        $article->update($request->validated());
+
+        $resource = new Fractal\Resource\Item($article, function (Article $data) {
+            $author = User::findOrFail($data->user_id);
+            return [
+                'title'   => (string) $data->title,
+                'content' => $data->content,
+                'author'  => [
+                    'name'  => $author->name,
+                    'email' => $author->email,
+                ],
+            ];
+        });
+
+        $result = $fractal->createData($resource);
+
+        return response()->json($result, Response::HTTP_OK);
     }
 
     /**
@@ -119,6 +139,9 @@ class ArticleController extends Controller
      */
     public function destroy($id)
     {
-        //
+        $article = Article::findOrFail($id);
+        $article->delete();
+
+        return response(null, Response::HTTP_NO_CONTENT);
     }
 }
